@@ -34,7 +34,3 @@ async function status(request, response) {
 }
 
 export default status;
-
-// versao do postres
-// conexao maxima
-// conexao usada
