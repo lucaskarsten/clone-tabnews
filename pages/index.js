@@ -1,59 +1,68 @@
 import Head from "next/head";
-import Image from "next/image";
 
-function Home() {
+export default function Home() {
   return (
-    <>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "100vh",
+        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        color: "white",
+        fontFamily: "Arial, sans-serif",
+        textAlign: "center",
+      }}
+    >
       <Head>
-        <title>Te Amo, Beatriz ❤️</title>
+        <title>Página Pessoal - Lucas Karsten</title>
+        <meta name="description" content="Página pessoal de Lucas Karsten" />
       </Head>
-      <div
-        style={{
-          background:
-            "linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%)",
-          minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: "Arial, sans-serif",
-          color: "#333",
-          padding: "20px",
-          textAlign: "center",
-        }}
-      >
-        <h1 style={{ color: "#d63384", fontSize: "3em", marginBottom: "10px" }}>
-          Te Amo, Minha Princesa! 💖
-        </h1>
-        <h2 style={{ color: "#6f42c1", fontSize: "2em", marginBottom: "20px" }}>
-          Obrigado por Tudo Que Você Faz
-        </h2>
-        <p
+      <h1 style={{ fontSize: "3rem", marginBottom: "1rem" }}>
+        Bem-vindo à minha página pessoal
+      </h1>
+      <p style={{ fontSize: "1.2rem", marginBottom: "2rem" }}>
+        Aqui você encontra links para minhas redes sociais.
+      </p>
+      <div style={{ display: "flex", justifyContent: "center", gap: "10px" }}>
+        <a
+          href="https://www.linkedin.com/in/lucas-karsten"
+          target="_blank"
+          rel="noopener noreferrer"
           style={{
-            fontSize: "1.2em",
-            lineHeight: "1.6",
-            maxWidth: "600px",
-            marginBottom: "30px",
+            padding: "10px 20px",
+            backgroundColor: "#0077b5",
+            color: "white",
+            textDecoration: "none",
+            borderRadius: "5px",
+            fontSize: "1rem",
+            transition: "background-color 0.3s",
           }}
+          onMouseOver={(e) => (e.target.style.backgroundColor = "#005885")}
+          onMouseOut={(e) => (e.target.style.backgroundColor = "#0077b5")}
         >
-          Você é a luz da minha vida, a razão do meu sorriso todos os dias.
-          Obrigado por ser minha companheira, minha amiga e meu amor eterno.
-          Cada momento ao seu lado é um tesouro que guardo no coração. Te amo
-          mais do que palavras podem expressar! 🌹
-        </p>
-        <Image
-          src="https://i.imgur.com/acasM70.jpeg"
-          alt="foto"
-          width={720}
-          height={1280}
+          Conecte-se no LinkedIn
+        </a>
+        <a
+          href="https://github.com/lucaskarsten"
+          target="_blank"
+          rel="noopener noreferrer"
           style={{
-            borderRadius: "10px",
-            boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+            padding: "10px 20px",
+            backgroundColor: "#333",
+            color: "white",
+            textDecoration: "none",
+            borderRadius: "5px",
+            fontSize: "1rem",
+            transition: "background-color 0.3s",
           }}
-        />
+          onMouseOver={(e) => (e.target.style.backgroundColor = "#555")}
+          onMouseOut={(e) => (e.target.style.backgroundColor = "#333")}
+        >
+          Veja meu GitHub
+        </a>
       </div>
-    </>
+    </div>
   );
 }
-
-export default Home;
