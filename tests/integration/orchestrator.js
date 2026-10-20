@@ -5,8 +5,23 @@ import migrator from "models/migrator.js";
 import user from "models/user.js";
 import session from "models/session.js";
 
+const emailHttpUrl = `http://${process.env.EMAIL_HTTP_HOST}:${process.env.EMAIL_HTTP_PORT}`;
+
 async function waitForAllServices() {
   await waitForWebServer();
+  await waitForEmailServer();
+
+  async function waitForEmailServer() {
+    return retry(
+      async () => {
+        const response = await fetch(emailHttpUrl);
+        if (response.status !== 200) {
+          throw new Error("Servidor de email ainda não está pronto.");
+        }
+      },
+      { retries: 100, maxTimeout: 1000 },
+    );
+  }
 
   async function waitForWebServer() {
     return retry(fetchStatusPage, {
@@ -46,12 +61,31 @@ async function createSession(userId) {
   return session.create(userId);
 }
 
+async function deleteAllEmails() {
+  await fetch(`${emailHttpUrl}/messages`, { method: "DELETE" });
+}
+
+async function getLastEmail() {
+  const messagesResponse = await fetch(`${emailHttpUrl}/messages`);
+  const messages = await messagesResponse.json();
+  const lastMessage = messages.at(-1);
+  if (!lastMessage) return null;
+
+  const textResponse = await fetch(
+    `${emailHttpUrl}/messages/${lastMessage.id}.plain`,
+  );
+  lastMessage.text = await textResponse.text();
+  return lastMessage;
+}
+
 const orchestrator = {
   waitForAllServices,
   clearDatabase,
   runPendingMigrations,
   createUser,
   createSession,
+  deleteAllEmails,
+  getLastEmail,
 };
 
 export default orchestrator;
