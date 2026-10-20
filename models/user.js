@@ -58,10 +58,28 @@ async function create(userInputValues) {
 
   const results = await database.query({
     text: `
-      INSERT INTO users (username, email, password)
-      VALUES ($1, $2, $3)
+      INSERT INTO users (username, email, password, features)
+      VALUES ($1, $2, $3, $4)
       RETURNING *;`,
-    values: [userInputValues.username, userInputValues.email, hashedPassword],
+    values: [
+      userInputValues.username,
+      userInputValues.email,
+      hashedPassword,
+      ["read:activation_token"],
+    ],
+  });
+
+  return results.rows[0];
+}
+
+async function setFeatures(userId, features) {
+  const results = await database.query({
+    text: `
+      UPDATE users
+      SET features = $2, updated_at = timezone('utc', now())
+      WHERE id = $1
+      RETURNING *;`,
+    values: [userId, features],
   });
 
   return results.rows[0];
@@ -161,6 +179,7 @@ const user = {
   findOneByUsername,
   findOneByEmail,
   update,
+  setFeatures,
 };
 
 export default user;
