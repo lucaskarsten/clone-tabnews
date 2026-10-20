@@ -23,7 +23,8 @@ npm run dev        # sobe Postgres + Mailcatcher, roda migrations e o next dev
 - Emails enviados em dev: http://localhost:1080 (Mailcatcher)
 
 As variáveis de ambiente de desenvolvimento ficam em `.env.development`.
-Segredos locais vão em `.env*.local`, que o git ignora.
+Todas as variáveis, com valores fictícios, estão em [`.env.example`](.env.example).
+Segredos locais vão em `.env.local` (ignorado pelo git).
 
 | Variável                      | Uso                                                          |
 | ----------------------------- | ------------------------------------------------------------ |
