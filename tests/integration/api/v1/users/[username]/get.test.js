@@ -4,15 +4,7 @@ beforeAll(async () => {
   await orchestrator.waitForAllServices();
   await orchestrator.clearDatabase();
   await orchestrator.runPendingMigrations();
-  await fetch("http://localhost:3000/api/v1/users", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      username: "MesmoCase",
-      email: "mesmo.case@exemplo.com",
-      password: "senha123",
-    }),
-  });
+  await orchestrator.createUser({ username: "MesmoCase" });
 });
 
 describe("GET /api/v1/users/[username]", () => {

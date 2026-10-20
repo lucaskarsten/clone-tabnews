@@ -8,15 +8,6 @@ beforeAll(async () => {
   await orchestrator.runPendingMigrations();
 });
 
-async function postUser(body) {
-  const response = await fetch("http://localhost:3000/api/v1/users", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ password: "senha123", ...body }),
-  });
-  return response.json();
-}
-
 async function patchUser(username, body) {
   return fetch(`http://localhost:3000/api/v1/users/${username}`, {
     method: "PATCH",
@@ -33,8 +24,14 @@ describe("PATCH /api/v1/users/[username]", () => {
     });
 
     test("Com username duplicado", async () => {
-      await postUser({ username: "user1", email: "user1@exemplo.com" });
-      await postUser({ username: "user2", email: "user2@exemplo.com" });
+      await orchestrator.createUser({
+        username: "user1",
+        email: "user1@exemplo.com",
+      });
+      await orchestrator.createUser({
+        username: "user2",
+        email: "user2@exemplo.com",
+      });
 
       const response = await patchUser("user2", { username: "User1" });
       expect(response.status).toBe(400);
@@ -44,8 +41,14 @@ describe("PATCH /api/v1/users/[username]", () => {
     });
 
     test("Com email duplicado", async () => {
-      await postUser({ username: "email1", email: "email1@exemplo.com" });
-      await postUser({ username: "email2", email: "email2@exemplo.com" });
+      await orchestrator.createUser({
+        username: "email1",
+        email: "email1@exemplo.com",
+      });
+      await orchestrator.createUser({
+        username: "email2",
+        email: "email2@exemplo.com",
+      });
 
       const response = await patchUser("email2", {
         email: "Email1@exemplo.com",
@@ -57,7 +60,7 @@ describe("PATCH /api/v1/users/[username]", () => {
     });
 
     test("Com username único", async () => {
-      const created = await postUser({
+      const created = await orchestrator.createUser({
         username: "unico1",
         email: "unico1@exemplo.com",
       });
@@ -68,11 +71,14 @@ describe("PATCH /api/v1/users/[username]", () => {
       const responseBody = await response.json();
       expect(responseBody.username).toBe("unico2");
       expect(responseBody.password).toBeUndefined();
-      expect(responseBody.updated_at > created.updated_at).toBe(true);
+      expect(new Date(responseBody.updated_at) > created.updated_at).toBe(true);
     });
 
     test("Mudando só a caixa do próprio username", async () => {
-      await postUser({ username: "caixa", email: "caixa@exemplo.com" });
+      await orchestrator.createUser({
+        username: "caixa",
+        email: "caixa@exemplo.com",
+      });
 
       const response = await patchUser("caixa", { username: "Caixa" });
       expect(response.status).toBe(200);
@@ -80,7 +86,10 @@ describe("PATCH /api/v1/users/[username]", () => {
     });
 
     test("Com nova senha", async () => {
-      await postUser({ username: "novasenha", email: "novasenha@exemplo.com" });
+      await orchestrator.createUser({
+        username: "novasenha",
+        password: "senha123",
+      });
 
       const response = await patchUser("novasenha", { password: "outraSenha" });
       expect(response.status).toBe(200);
