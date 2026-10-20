@@ -1,4 +1,6 @@
 import orchestrator from "tests/integration/orchestrator.js";
+import user from "models/user.js";
+import password from "models/password.js";
 
 beforeAll(async () => {
   await orchestrator.waitForAllServices();
@@ -75,6 +77,21 @@ describe("PATCH /api/v1/users/[username]", () => {
       const response = await patchUser("caixa", { username: "Caixa" });
       expect(response.status).toBe(200);
       expect((await response.json()).username).toBe("Caixa");
+    });
+
+    test("Com nova senha", async () => {
+      await postUser({ username: "novasenha", email: "novasenha@exemplo.com" });
+
+      const response = await patchUser("novasenha", { password: "outraSenha" });
+      expect(response.status).toBe(200);
+
+      const userInDatabase = await user.findOneByUsername("novasenha");
+      expect(
+        await password.compare("outraSenha", userInDatabase.password),
+      ).toBe(true);
+      expect(await password.compare("senha123", userInDatabase.password)).toBe(
+        false,
+      );
     });
   });
 });

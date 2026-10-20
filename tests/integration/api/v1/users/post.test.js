@@ -1,4 +1,6 @@
 import orchestrator from "tests/integration/orchestrator.js";
+import user from "models/user.js";
+import password from "models/password.js";
 
 beforeAll(async () => {
   await orchestrator.waitForAllServices();
@@ -36,6 +38,15 @@ describe("POST /api/v1/users", () => {
       expect(responseBody.id).toMatch(/^[0-9a-f-]{36}$/);
       expect(Date.parse(responseBody.created_at)).not.toBeNaN();
       expect(Date.parse(responseBody.updated_at)).not.toBeNaN();
+
+      const userInDatabase = await user.findOneByUsername("lucaskarsten");
+      expect(userInDatabase.password).not.toBe("senha123");
+      expect(await password.compare("senha123", userInDatabase.password)).toBe(
+        true,
+      );
+      expect(
+        await password.compare("senhaErrada", userInDatabase.password),
+      ).toBe(false);
     });
 
     test("Com email duplicado (caixa diferente)", async () => {
