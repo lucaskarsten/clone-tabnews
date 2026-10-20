@@ -1,92 +1,79 @@
 # clone-tabnews
 
-Clone do tabnews para o curso de dev do deschamps
+Clone do [TabNews](https://www.tabnews.com.br) feito no [curso.dev](https://curso.dev).
+Next.js 13 (pages router), PostgreSQL com `pg` e `node-pg-migrate`, testes de
+integração com Jest contra o banco real.
 
-## Variáveis de ambiente PostgreSQL
+## Como este projeto foi feito
 
-O código usa conexão direta com `pg` e espera as variáveis:
+Acompanhei todas as aulas do curso. Os Dias 1–25 implementei à mão; dos Dias
+26–56 em diante usei o Claude Code para a implementação, sob minha direção e
+com revisão minha.
 
-```
-POSTGRES_HOST
-POSTGRES_PORT
-POSTGRES_USER
-POSTGRES_DB
-POSTGRES_PASSWORD
-```
+## Rodando localmente
 
-Como comodidade, os nomes genéricos `PGHOST`, `PGUSER`, `PGPASSWORD`,
-`PGDATABASE` e `PGPORT` também são aceitos (é o padrão do cliente `psql`
-e de vários provedores). Se nenhuma senha válida for encontrada o servidor
-vai falhar com erro explicando o problema em vez de um baixo‑nível
-"client password must be a string".
-
-Alguns bancos (Neon, Heroku, etc.) exigem conexão segura. É possível
-informar a política via `PGSSLMODE` ou `POSTGRES_SSLMODE` — o código lê
-essas variáveis e habilita SSL (`require`, `prefer`, `verify-full`, ...)
-durante a conexão. Sem isso, o erro "connection is insecure (try using
-`sslmode=require`)" pode aparecer.
-
-A API `/api/knowledge` cria a tabela automaticamente na primeira chamada,
-o que evita necessidade de executar migrações manualmente em ambientes
-transientes.
-
-Para checar se a aplicação consegue falar com o banco usando qualquer
-conjunto de variáveis (por exemplo, suas credenciais de produção) há um
-script auxiliar:
+Requisitos: Node 22 (`.nvmrc`), Docker com Compose.
 
 ```bash
-# export os dados que você listou no shell
-PGHOST='...'
-PGDATABASE=''
-PGUSER=''
-PGPASSWORD=''
-PGSSLMODE=
-PGCHANNELBINDING=
-
-# então execute:
-node infra/check-connection.js
+npm ci
+npm run dev        # sobe Postgres + Mailcatcher, roda migrations e o next dev
 ```
 
-Se a conexão for bem‑sucedida ele exibirá o horário do servidor e
-sairá com código 0, caso contrário mostrará o erro retornado pelo driver
-(e.g. senha indefinida, timeout, etc.).
+- App: http://localhost:3000
+- Emails enviados em dev: http://localhost:1080 (Mailcatcher)
 
-### Executando migrações
+As variáveis de ambiente de desenvolvimento ficam em `.env.development`.
+Segredos locais vão em `.env*.local`, que o git ignora.
 
-Para rodar migrations use os scripts npm que já carregam as variáveis de
-ambiente e, opcionalmente, definem o `DATABASE_URL`:
+| Variável                      | Uso                                       |
+| ----------------------------- | ----------------------------------------- |
+| `POSTGRES_*` / `DATABASE_URL` | conexão com o banco                       |
+| `PEPPER`                      | segredo somado à senha antes do bcrypt    |
+| `EMAIL_SMTP_*`                | servidor SMTP (nodemailer)                |
+| `EMAIL_HTTP_HOST`/`_PORT`     | API do Mailcatcher, usada pelos testes    |
+| `WEBSERVER_URL`               | base do link de ativação enviado no email |
+
+## Testes
 
 ```bash
-npm run migration:up       # carrega .env.development se existir e usa $DATABASE_URL
-npm run migration:up:dev   # igual, mas passa flag adicional para o migrator
+npm test
 ```
 
-Evite chamar `node-pg-migrate` diretamente; a CLI não respeita `PGHOST`
-/`PGPASSWORD` etc. e pode gerar o erro “client password must be a string”.
-Se preferir executar manualmente, forneça a URL completa:
+Sobe os serviços, inicia o `next dev` e roda o Jest em série. Os testes ficam em
+`tests/integration/` e falam com o servidor e o banco de verdade, sem mocks.
+`tests/integration/orchestrator.js` limpa o banco, roda migrations e cria
+usuários, sessões e lê emails do Mailcatcher.
 
-```bash
-PGHOST=... PGPASSWORD=... node-pg-migrate --migrations-dir infra/migrations \
-  --url "$PGHOST..." up
+Lint: `npm run lint:prettier:check` e `npm run lint:eslint:check`.
+
+## API
+
+Todas as rotas ficam em `/api/v1`. Erros seguem o formato
+`{ name, message, action, status_code }`.
+
+| Método | Rota                      | Feature exigida         | Descrição                                            |
+| ------ | ------------------------- | ----------------------- | ---------------------------------------------------- |
+| GET    | `/status`                 | —                       | saúde do banco; versão só com `read:status:all`      |
+| GET    | `/migrations`             | `read:migration`        | migrations pendentes                                 |
+| POST   | `/migrations`             | `create:migration`      | roda as pendentes (201 se rodou alguma)              |
+| POST   | `/users`                  | `create:user`           | cadastra e envia email de ativação                   |
+| GET    | `/users/[username]`       | —                       | perfil público; email só para o próprio usuário      |
+| PATCH  | `/users/[username]`       | `update:user`           | edita a si mesmo; outros exigem `update:user:others` |
+| PATCH  | `/activations/[token_id]` | `read:activation_token` | ativa a conta (token vale 15 min)                    |
+| POST   | `/sessions`               | `create:session`        | login; seta cookie `session_id` (30 dias)            |
+| DELETE | `/sessions`               | `read:session`          | logout; expira a sessão e limpa o cookie             |
+| GET    | `/user`                   | `read:session`          | usuário da sessão; renova sessão e cookie            |
+
+Anônimos têm `read:activation_token`, `create:session` e `create:user`. Um
+usuário recém-cadastrado só tem `read:activation_token`; ao ativar a conta passa
+a ter `create:session`, `read:session` e `update:user`.
+
+## Estrutura
+
 ```
-
-### Corrigindo migrações já aplicadas erroneamente
-
-Se você criar ou editar um arquivo de migração mas ele já tiver sido
-registrado em `pgmigrations`, o runner não voltará a executá‑lo. Isso é
-intencional, mas às vezes resultará em erros como “relation already
-exists” se a versão anterior tiver gerado um objeto diferente.
-
-Para resolver:
-
-1. **Ajuste o arquivo** (por exemplo, troque o nome da tabela ou use
-   `ifNotExists`), como foi feito na migração `add-memory-table`.
-2. **Remova a linha correspondente em `pgmigrations`** usando um cliente
-   SQL ou execute `DROP SCHEMA public CASCADE; CREATE SCHEMA public;`
-   em pequenos ambientes de desenvolvimento quando for seguro.
-   Isso limpa o histórico e permite que as migrations sejam reaplicadas.
-3. Para evitar futuros acidentes, adicione `ifNotExists`/`ifExists` às
-   operações ou escrever validações no `up`.
-
-Estas medidas deixam as migrações tolerantes e facilitam o reset do
-ambiente de desenvolvedor quando você está apenas brincando localmente.
+infra/       banco, email, erros, controller (next-connect), migrations
+models/      user, password, session, authentication, authorization, activation, migrator
+pages/       páginas (cadastro, login, status) e a API em pages/api/v1
+components/  layout e formulário compartilhado (Primer React)
+tests/       testes de integração
+```
