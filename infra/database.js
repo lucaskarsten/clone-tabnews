@@ -24,30 +24,12 @@ async function query(queryObject) {
 async function getNewClient() {
   // prefer explicit POSTGRES_* vars, but also accept generic PG* names that
   // some tools (e.g. `psql`, docker-compose) set automatically.
-  // when running under Jest (NODE_ENV=test) the Next.js server process
-  // does not inherit the environment overrides made by the test runner,
-  // so we enforce local defaults here to guarantee tests hit the
-  // dockerized postgres container instead of any stray production config.
-  const isTest = process.env.NODE_ENV === "test";
-
   const env = {
-    host: isTest
-      ? process.env.POSTGRES_HOST || process.env.PGHOST || "localhost"
-      : process.env.POSTGRES_HOST || process.env.PGHOST || "localhost",
-    port: isTest
-      ? process.env.POSTGRES_PORT || process.env.PGPORT || "5432"
-      : process.env.POSTGRES_PORT || process.env.PGPORT || undefined,
-    user: isTest
-      ? process.env.POSTGRES_USER || process.env.PGUSER || "local_user"
-      : process.env.POSTGRES_USER || process.env.PGUSER,
-    database: isTest
-      ? process.env.POSTGRES_DB || process.env.PGDATABASE || "local_db"
-      : process.env.POSTGRES_DB || process.env.PGDATABASE,
-    password: isTest
-      ? process.env.POSTGRES_PASSWORD ||
-        process.env.PGPASSWORD ||
-        "local_password"
-      : process.env.POSTGRES_PASSWORD || process.env.PGPASSWORD,
+    host: process.env.POSTGRES_HOST || process.env.PGHOST || "localhost",
+    port: process.env.POSTGRES_PORT || process.env.PGPORT || undefined,
+    user: process.env.POSTGRES_USER || process.env.PGUSER,
+    database: process.env.POSTGRES_DB || process.env.PGDATABASE,
+    password: process.env.POSTGRES_PASSWORD || process.env.PGPASSWORD,
     ssl: getSSLValues(),
   };
 

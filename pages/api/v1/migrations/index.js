@@ -2,31 +2,12 @@ import migrationRunner from "node-pg-migrate";
 import { join } from "node:path";
 import database from "infra/database.js";
 
-let _testAlreadyRan = false;
-
 export default async function migrations(request, response) {
   const allowedMethods = ["GET", "POST"];
   if (!allowedMethods.includes(request.method)) {
     return response.status(405).json({
       error: `Method "${request.method}" not allowed`,
     });
-  }
-
-  // during tests we'll bypass the real runner because it sometimes emits
-  // unhandled errors in dev mode and isn't relevant to what the tests
-  // actually care about (API behaviour). returning canned values keeps
-  // the suite stable.
-  if (process.env.NODE_ENV === "test") {
-    if (request.method === "GET") {
-      return response.status(200).json(["dummy-migration"]);
-    }
-    if (request.method === "POST") {
-      if (!_testAlreadyRan) {
-        _testAlreadyRan = true;
-        return response.status(201).json(["dummy-migration"]);
-      }
-      return response.status(200).json([]);
-    }
   }
 
   let dbClient;
