@@ -1,6 +1,14 @@
+import { createRouter } from "next-connect";
 import database from "infra/database";
+import controller from "infra/controller.js";
 
-async function status(request, response) {
+const router = createRouter();
+
+router.get(getHandler);
+
+export default router.handler(controller.errorHandlers);
+
+async function getHandler(request, response) {
   const updatedAt = new Date().toISOString();
 
   const databaseVersionResult = await database.query("SHOW server_version;");
@@ -14,12 +22,12 @@ async function status(request, response) {
 
   const databaseName = process.env.POSTGRES_DB;
 
-  const databasOepenedConnectionsResult = await database.query({
+  const databaseOpenedConnectionsResult = await database.query({
     text: "SELECT COUNT(*)::int FROM pg_stat_activity WHERE datname = $1;",
     values: [databaseName],
   });
   const databaseOpenedConnectionsValue =
-    databasOepenedConnectionsResult.rows[0].count;
+    databaseOpenedConnectionsResult.rows[0].count;
 
   response.status(200).json({
     updated_at: updatedAt,
@@ -32,5 +40,3 @@ async function status(request, response) {
     },
   });
 }
-
-export default status;
