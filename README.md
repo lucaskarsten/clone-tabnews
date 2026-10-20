@@ -25,13 +25,13 @@ npm run dev        # sobe Postgres + Mailcatcher, roda migrations e o next dev
 As variáveis de ambiente de desenvolvimento ficam em `.env.development`.
 Segredos locais vão em `.env*.local`, que o git ignora.
 
-| Variável                      | Uso                                       |
-| ----------------------------- | ----------------------------------------- |
-| `POSTGRES_*` / `DATABASE_URL` | conexão com o banco                       |
-| `PEPPER`                      | segredo somado à senha antes do bcrypt    |
-| `EMAIL_SMTP_*`                | servidor SMTP (nodemailer)                |
-| `EMAIL_HTTP_HOST`/`_PORT`     | API do Mailcatcher, usada pelos testes    |
-| `WEBSERVER_URL`               | base do link de ativação enviado no email |
+| Variável                      | Uso                                                          |
+| ----------------------------- | ------------------------------------------------------------ |
+| `POSTGRES_*` / `DATABASE_URL` | conexão com o banco; SSL em produção, `POSTGRES_CA` opcional |
+| `PEPPER`                      | segredo somado à senha antes do bcrypt                       |
+| `EMAIL_SMTP_*`                | servidor SMTP (nodemailer)                                   |
+| `EMAIL_HTTP_HOST`/`_PORT`     | API do Mailcatcher, usada pelos testes                       |
+| `WEBSERVER_URL`               | base do link de ativação enviado no email                    |
 
 ## Testes
 
