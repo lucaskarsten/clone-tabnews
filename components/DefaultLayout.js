@@ -9,6 +9,7 @@ export default function DefaultLayout({ title, description, children }) {
     <>
       <Head>
         <title>{pageTitle}</title>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <meta
           name="description"
           content={description || "Clone do TabNews feito no curso.dev."}
