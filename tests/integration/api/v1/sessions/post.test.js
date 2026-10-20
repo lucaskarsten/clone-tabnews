@@ -7,12 +7,17 @@ beforeAll(async () => {
   await orchestrator.runPendingMigrations();
 });
 
-async function postSession(body) {
+async function postSession(body, headers = {}) {
   return fetch("http://localhost:3000/api/v1/sessions", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...headers },
     body: JSON.stringify(body),
   });
+}
+
+async function createActivatedUser(userObject) {
+  const createdUser = await orchestrator.createUser(userObject);
+  return orchestrator.activateUser(createdUser);
 }
 
 const authenticationError = {
@@ -25,7 +30,7 @@ const authenticationError = {
 describe("POST /api/v1/sessions", () => {
   describe("Usuário anônimo", () => {
     test("Com email incorreto e senha correta", async () => {
-      await orchestrator.createUser({ password: "senha-correta" });
+      await createActivatedUser({ password: "senha-correta" });
 
       const response = await postSession({
         email: "email.errado@exemplo.com",
@@ -36,7 +41,7 @@ describe("POST /api/v1/sessions", () => {
     });
 
     test("Com email correto e senha incorreta", async () => {
-      const createdUser = await orchestrator.createUser({
+      const createdUser = await createActivatedUser({
         password: "senha-correta",
       });
 
@@ -48,8 +53,26 @@ describe("POST /api/v1/sessions", () => {
       expect(await response.json()).toEqual(authenticationError);
     });
 
-    test("Com email e senha corretos", async () => {
+    test("Com conta ainda não ativada", async () => {
       const createdUser = await orchestrator.createUser({
+        password: "nao-ativado",
+      });
+
+      const response = await postSession({
+        email: createdUser.email,
+        password: "nao-ativado",
+      });
+      expect(response.status).toBe(403);
+      expect(await response.json()).toEqual({
+        name: "ForbiddenError",
+        message: "Você não possui permissão para fazer login.",
+        action: "Ative sua conta pelo link enviado ao seu email.",
+        status_code: 403,
+      });
+    });
+
+    test("Com email e senha corretos", async () => {
+      const createdUser = await createActivatedUser({
         email: "tudo.certo@exemplo.com",
         password: "tudo-certo",
       });

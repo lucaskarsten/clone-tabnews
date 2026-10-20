@@ -8,10 +8,10 @@ beforeAll(async () => {
   await orchestrator.runPendingMigrations();
 });
 
-async function postUser(body) {
+async function postUser(body, headers = {}) {
   return fetch("http://localhost:3000/api/v1/users", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...headers },
     body: JSON.stringify(body),
   });
 }
@@ -30,7 +30,6 @@ describe("POST /api/v1/users", () => {
       expect(responseBody).toEqual({
         id: responseBody.id,
         username: "lucaskarsten",
-        email: "lucas@exemplo.com",
         features: ["read:activation_token"],
         created_at: responseBody.created_at,
         updated_at: responseBody.updated_at,
@@ -40,6 +39,7 @@ describe("POST /api/v1/users", () => {
       expect(Date.parse(responseBody.updated_at)).not.toBeNaN();
 
       const userInDatabase = await user.findOneByUsername("lucaskarsten");
+      expect(userInDatabase.email).toBe("lucas@exemplo.com");
       expect(userInDatabase.password).not.toBe("senha123");
       expect(await password.compare("senha123", userInDatabase.password)).toBe(
         true,
@@ -83,6 +83,27 @@ describe("POST /api/v1/users", () => {
       });
       expect(response.status).toBe(400);
       expect((await response.json()).name).toBe("ValidationError");
+    });
+  });
+
+  describe("Usuário padrão", () => {
+    test("Logado não pode criar outro usuário", async () => {
+      const defaultUser = await orchestrator.createUser();
+      await orchestrator.activateUser(defaultUser);
+      const defaultSession = await orchestrator.createSession(defaultUser.id);
+
+      const response = await postUser(
+        {
+          username: "segundaconta",
+          email: "segunda@exemplo.com",
+          password: "senha123",
+        },
+        { Cookie: `session_id=${defaultSession.token}` },
+      );
+      expect(response.status).toBe(403);
+      expect((await response.json()).action).toBe(
+        'Verifique se o seu usuário possui a feature "create:user".',
+      );
     });
   });
 });

@@ -7,6 +7,8 @@ import {
   ForbiddenError,
 } from "infra/errors.js";
 import session from "models/session.js";
+import user from "models/user.js";
+import authorization from "models/authorization.js";
 
 const knownErrors = [
   ValidationError,
@@ -61,11 +63,42 @@ function clearSessionCookie(response) {
   writeSessionCookie("invalid", -1, response);
 }
 
+async function injectAnonymousOrUser(request, response, next) {
+  const sessionToken = request.cookies.session_id;
+
+  if (!sessionToken) {
+    request.context = {
+      ...request.context,
+      user: { features: authorization.ANONYMOUS_FEATURES },
+    };
+    return next();
+  }
+
+  const sessionObject = await session.findOneValidByToken(sessionToken);
+  const userObject = await user.findOneById(sessionObject.user_id);
+  request.context = { ...request.context, user: userObject };
+  return next();
+}
+
+function canRequest(feature) {
+  return function canRequestMiddleware(request, response, next) {
+    if (!authorization.can(request.context.user, feature)) {
+      throw new ForbiddenError({
+        message: "Você não possui permissão para executar esta ação.",
+        action: `Verifique se o seu usuário possui a feature "${feature}".`,
+      });
+    }
+    return next();
+  };
+}
+
 const controller = {
   errorHandlers: {
     onNoMatch: onNoMatchHandler,
     onError: onErrorHandler,
   },
+  injectAnonymousOrUser,
+  canRequest,
   setSessionCookie,
   clearSessionCookie,
 };

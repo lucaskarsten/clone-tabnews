@@ -4,6 +4,7 @@ import { faker } from "@faker-js/faker";
 import migrator from "models/migrator.js";
 import user from "models/user.js";
 import session from "models/session.js";
+import activation from "models/activation.js";
 
 const emailHttpUrl = `http://${process.env.EMAIL_HTTP_HOST}:${process.env.EMAIL_HTTP_PORT}`;
 
@@ -57,6 +58,15 @@ async function createUser(userObject = {}) {
   });
 }
 
+async function activateUser(userObject) {
+  return activation.activateUserByUserId(userObject.id);
+}
+
+async function addFeaturesToUser(userObject, features) {
+  const current = await user.findOneById(userObject.id);
+  return user.setFeatures(userObject.id, [...current.features, ...features]);
+}
+
 async function createSession(userId) {
   return session.create(userId);
 }
@@ -83,6 +93,8 @@ const orchestrator = {
   clearDatabase,
   runPendingMigrations,
   createUser,
+  activateUser,
+  addFeaturesToUser,
   createSession,
   deleteAllEmails,
   getLastEmail,

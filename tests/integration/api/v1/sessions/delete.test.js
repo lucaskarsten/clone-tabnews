@@ -10,11 +10,23 @@ beforeAll(async () => {
 async function deleteSession(token) {
   return fetch("http://localhost:3000/api/v1/sessions", {
     method: "DELETE",
-    headers: { Cookie: `session_id=${token}` },
+    headers: token ? { Cookie: `session_id=${token}` } : {},
   });
 }
 
+async function createActivatedUser() {
+  const createdUser = await orchestrator.createUser();
+  return orchestrator.activateUser(createdUser);
+}
+
 describe("DELETE /api/v1/sessions", () => {
+  describe("Usuário anônimo", () => {
+    test("Sem cookie de sessão", async () => {
+      const response = await deleteSession();
+      expect(response.status).toBe(403);
+    });
+  });
+
   describe("Usuário padrão", () => {
     test("Com sessão inexistente", async () => {
       const response = await deleteSession("token-que-nao-existe");
@@ -30,7 +42,7 @@ describe("DELETE /api/v1/sessions", () => {
         now: new Date(Date.now() - session.EXPIRATION_IN_MILLISECONDS),
         doNotFake: ["nextTick", "setImmediate", "setTimeout"],
       });
-      const createdUser = await orchestrator.createUser();
+      const createdUser = await createActivatedUser();
       const expiredSession = await orchestrator.createSession(createdUser.id);
       jest.useRealTimers();
 
@@ -39,7 +51,7 @@ describe("DELETE /api/v1/sessions", () => {
     });
 
     test("Com sessão válida", async () => {
-      const createdUser = await orchestrator.createUser();
+      const createdUser = await createActivatedUser();
       const validSession = await orchestrator.createSession(createdUser.id);
 
       const response = await deleteSession(validSession.token);

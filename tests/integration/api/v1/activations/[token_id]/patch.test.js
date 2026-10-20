@@ -98,4 +98,22 @@ describe("PATCH /api/v1/activations/[token_id]", () => {
       expect(response.status).toBe(404);
     });
   });
+
+  describe("Usuário padrão", () => {
+    test("Já ativado não pode usar token de ativação", async () => {
+      const createdUser = await orchestrator.createUser();
+      const pendingToken = await activation.create(createdUser.id);
+      await orchestrator.activateUser(createdUser);
+      const userSession = await orchestrator.createSession(createdUser.id);
+
+      const response = await fetch(
+        `http://localhost:3000/api/v1/activations/${pendingToken.id}`,
+        {
+          method: "PATCH",
+          headers: { Cookie: `session_id=${userSession.token}` },
+        },
+      );
+      expect(response.status).toBe(403);
+    });
+  });
 });
